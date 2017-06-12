@@ -1,0 +1,347 @@
+///---------------------------------------------------------------------------
+#include <vcl.h>
+#pragma hdrstop
+#include<stdio.h>
+#include<string>
+#include<math.h>
+#include<time.h>
+#include "Unit1.h"
+//---------------------------------------------------------------------------
+#pragma package(smart_init)
+#pragma resource "*.dfm"
+#define INDEXMAX 100
+#define MAXCYCLESBEFORE 1000
+#define MAXCYCLESAFTER 10000
+#define ANZMILLIMETER 10000
+bool abfrage=false;
+char memo1Label[15]="";
+char memo1Display[10]="";
+unsigned char abc[]="12344";
+unsigned char embeddebBoxData[2]="";
+unsigned char decide;
+float incomingSpeed=0;
+float actSpeed[100];
+int structIndexbef=0;
+int structIndexaft=0;
+//STRUCTS
+
+// Speed and distance before using the break
+struct speedAndDisctanceBefore{
+int speedBefore;
+float distanceBefore;
+};
+struct speedAndDisctanceBefore incomingDataBefore[MAXCYCLESBEFORE];
+
+
+//Speed and Distance after using the break
+struct speedAndDisctanceAfter{
+int speedAfter;
+float distanceAfter;	
+};
+struct speedAndDisctanceAfter incomingDataAfter[MAXCYCLESAFTER];
+
+//Starttime
+struct START_TIME{
+char startCompleteDate[50];
+long startMinute;
+long startSecond;
+long startMilliseconds;
+bool allreadyStarted;
+};
+struct START_TIME start={"abc",0,0,0,false};
+
+//Stoptime
+struct STOP_TIME{
+char stopcompleteDate[50];
+long stopMinute;
+long stopSecond;
+long stopMilliseconds;
+bool allreadyStopped;
+};
+struct STOP_TIME stop={"",0,0,0,false};
+
+//reading Leuze laser
+struct leuzeLaserStruct
+{char readingIdentifier;
+  bool status;
+   bool IO2;
+   bool IO1;
+   bool adr;
+   bool ready;
+   bool lsr;
+   bool tmp;
+   bool err;
+   bool att;
+   bool plb;
+   bool ovfl;
+   bool sign;
+   float value;
+   unsigned char xor;
+};
+struct leuzeLaserStruct LeuzeLaserData;
+
+
+//Zeitabfrage
+ void getTheTimeNow(START_TIME *gogo){
+ SYSTEMTIME st, lt;
+GetSystemTime(&st);
+GetLocalTime(&lt);
+gogo->startMilliseconds=st.wMilliseconds;
+gogo->startSecond=st.wSecond;
+gogo->startMinute=st.wMinute;
+sprintf(gogo->startCompleteDate,"%02d.%02d.%04d %02d:%02d:%02d:%04d",lt.wDay, lt.wMonth, lt.wYear, lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds);
+}
+void memo1Show(struct leuzeLaserStruct *structure){
+       switch(structure->readingIdentifier)
+       {
+          case 'P':
+	 int allData=LeuzeLaserData.value*ANZMILLIMETER;
+           int meters=allData/ANZMILLIMETER;
+           int millimeters=allData-meters*ANZMILLIMETER;
+            sprintf(memo1Display,"%u,%um",meters,millimeters);
+          break;
+       }
+
+
+
+          };
+          TForm1 *Form1;
+//---------------------------------------------------------------------------
+__fastcall TForm1::TForm1(TComponent* Owner)
+        : TForm(Owner)
+{
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::verbindenButton1Click(TObject *Sender)
+{
+ClientSocket1->Active=true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::ClientSocket1Connect(TObject *Sender,
+      TCustomWinSocket *Socket)
+{
+
+Memo1->Clear();
+Memo1->Lines->Add("Laser verbunden");
+unsigned char data[100];
+
+data[0]=0x00;
+data[1]='E';
+data[2]=0x4C;
+data[3]=0x31;
+data[4]=0x00;
+data[5]=0x02;
+data[6]=0xFF;
+data[7]=0xF4;
+ClientSocket1->Socket->SendBuf(data,8);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ClientSocket1Disconnect(TObject *Sender,
+      TCustomWinSocket *Socket)
+{
+Memo1->Clear();
+Memo1->Lines->Add("Laser getrennt");
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::trennenButton1Click(TObject *Sender)
+{
+ClientSocket1->Active=false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::laserAnButton1Click(TObject *Sender)
+{
+unsigned char data[100];
+
+data[0]=0x00;
+data[1]='E';
+data[2]=0x4C;
+data[3]=0x31;
+data[4]=0x00;
+data[5]=0x02;
+data[6]=0xFF;
+data[7]=0xF4;
+ClientSocket1->Socket->SendBuf(data,8);
+
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::laserAusButton1Click(TObject *Sender)
+{
+unsigned char data[100];
+
+data[0]=0x00;
+data[1]='A';
+data[2]=0x4C;
+data[3]=0x31;
+data[4]=0x00;
+data[5]=0x02;
+data[6]=0xFF;
+data[7]=0xF5;
+  ClientSocket1->Socket->SendBuf(data,8);
+  Memo1->Lines->Add("aus");
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::ClientSocket2Connect(TObject *Sender,
+      TCustomWinSocket *Socket)
+{
+Memo1->Lines->Add("Arduino Verbunden");
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::Button1Click(TObject *Sender)
+{
+ClientSocket2->Active=true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::Button2Click(TObject *Sender)
+{
+ClientSocket2->Active=false;        
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::ClientSocket2Disconnect(TObject *Sender,
+      TCustomWinSocket *Socket)
+{
+Memo1->Lines->Add("Arduino getrennt");        
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::Button3Click(TObject *Sender)
+{
+unsigned char data[1];
+
+data[0]=0x01;
+ClientSocket2->Socket->SendBuf(data,1);
+Memo1->Lines->Add("LED an");
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::Button4Click(TObject *Sender)
+{
+unsigned char data[1];
+ decide='A';
+data[0]=0x00;
+ClientSocket2->Socket->SendBuf(data,1);
+Memo1->Lines->Add("LED aus");
+}
+//---------------------------------------------------------------------------
+
+
+
+void __fastcall TForm1::ZeitanzeigeButton5Click(TObject *Sender)
+{
+//getTheTimeNow(&start);
+//start.startMinute=23;
+//Memo1->Lines->Add(start.startCompleteDate);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::ClientSocket2Read(TObject *Sender,
+      TCustomWinSocket *Socket)
+{
+ int bytes;
+ bytes=Socket->ReceiveBuf(embeddebBoxData,2);
+ Memo1->Lines->Add(embeddebBoxData[0]);
+ Memo1->Lines->Add(start.startCompleteDate);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::SystemverbindenButton5Click(TObject *Sender)
+{
+//ClientSocket2->Active=true;
+ClientSocket1->Active=true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::SystemtrennenButton6Click(TObject *Sender)
+{
+unsigned char data[100];
+
+data[0]=0x00;
+data[1]='A';
+data[2]=0x4C;
+data[3]=0x31;
+data[4]=0x00;
+data[5]=0x02;
+data[6]=0xFF;
+data[7]=0xF5;
+  ClientSocket1->Socket->SendBuf(data,8);
+ClientSocket1->Active=false;
+ClientSocket2->Active=false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm1::ClientSocket1Read(TObject *Sender,
+      TCustomWinSocket *Socket)
+{
+  unsigned char leuzeLaserResponse[200];
+   int bytes;
+   char str[100], str2[100];
+      bytes = Socket -> ReceiveBuf(leuzeLaserResponse, 199);
+	    LeuzeLaserData.readingIdentifier = leuzeLaserResponse[1];
+       LeuzeLaserData.status = leuzeLaserResponse[7] & 0x40;
+       LeuzeLaserData.IO2    = leuzeLaserResponse[7] & 0x20;
+       LeuzeLaserData.IO1    = leuzeLaserResponse[7] & 0x10;
+       LeuzeLaserData.adr    = leuzeLaserResponse[7] & 0x0F;
+       LeuzeLaserData.ready  = leuzeLaserResponse[8] & 0x80;
+       LeuzeLaserData.lsr    = leuzeLaserResponse[8] & 0x40;
+       LeuzeLaserData.tmp    = leuzeLaserResponse[8] & 0x20;
+       LeuzeLaserData.err    = leuzeLaserResponse[8] & 0x10;
+       LeuzeLaserData.att    = leuzeLaserResponse[8] & 0x08;
+       LeuzeLaserData.plb    = leuzeLaserResponse[8] & 0x04;
+       LeuzeLaserData.ovfl   = leuzeLaserResponse[8] & 0x02;
+       LeuzeLaserData.sign   = leuzeLaserResponse[8] & 0x01;
+       LeuzeLaserData.value  = ((leuzeLaserResponse[9]<<16) | (leuzeLaserResponse[10]<<8) | (leuzeLaserResponse[11]))*0.001;
+switch(LeuzeLaserData.readingIdentifier)
+       {
+          case 'P':
+		 strcpy(memo1Label, "Entfernung");
+           incomingDataBefore[structIndexbef].distanceBefore=LeuzeLaserData.value;
+		   structIndexbef++;
+          break;
+
+          case 'G':
+          break;
+
+          default:
+
+          break;
+       }
+     //LeuzeLaserData.value=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
+     //incomingSpeed=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
+
+	if(abfrage==true){
+          memo1Show(&LeuzeLaserData);
+	 Memo1->Clear();
+	 Memo1->Lines->Add(memo1Label);
+	 Memo1->Lines->Delete(Memo1->Lines->Count);
+	 Memo1->Lines->Add(memo1Display);
+         abfrage=false;
+         }
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TForm1::DistanzButton5Click(TObject *Sender)
+{
+Timer1->Enabled=true;
+      unsigned char data[100];
+    data[0] = 0x00;
+    data[1] = 'P';
+    data[2] = 0x4C;
+    data[3] = 0x31;
+    data[4] = 0x00;
+    data[5] = 0x02;
+    data[6] = 0xFF;
+    data[7] = 0xF1;
+     abfrage=true;
+    ClientSocket1->Socket->SendBuf(data,8);
+}
+//---------------------------------------------------------------------------
+
+
+
+
