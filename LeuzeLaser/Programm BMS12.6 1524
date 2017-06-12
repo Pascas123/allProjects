@@ -57,7 +57,7 @@ bool allreadyStopped;
 struct STOP_TIME stop={"",0,0,0,false};
 //Messdaten des Leutze Lasers
     int typx=0;
-struct leuze_struct_def
+struct leuzeLaserStruct
 {char MesswertKennung;
   bool status;
    bool IO2;
@@ -73,7 +73,8 @@ struct leuze_struct_def
    bool sign;
    float value;
    unsigned char xor;
-} leuze_struct;
+};
+struct leuzeLaserStruct LeuzeLaserData;
 
 
 //Zeitabfrage
@@ -264,17 +265,42 @@ ClientSocket2->Active=false;
 void __fastcall TForm1::ClientSocket1Read(TObject *Sender,
       TCustomWinSocket *Socket)
 {
-  unsigned char leuze_antwort[200];
+  unsigned char leuzeLaserResponse[200];
    int bytes;
    char str[100], str2[100];
-      bytes = Socket -> ReceiveBuf(leuze_antwort, 199);
-   /*  Memo1->Lines->Add(leuze_antwort[9]);
-     Memo1->Lines->Add(leuze_antwort[10]);
-     Memo1->Lines->Add(leuze_antwort[11]);
-     Memo1->Lines->Add(leuze_struct.value);
-     */
-     //leuze_struct.value=(leuze_antwort[9]<<16)+(leuze_antwort[10]<<8)+leuze_antwort[11];
-     incomingSpeed=(leuze_antwort[9]<<16)+(leuze_antwort[10]<<8)+leuze_antwort[11];
+      bytes = Socket -> ReceiveBuf(leuzeLaserResponse, 199);
+	    LeuzeLaserData.readingIdentifier = leuzeLaserResponse[1];
+       LeuzeLaserData.status = leuzeLaserResponse[7] & 0x40;
+       LeuzeLaserData.IO2    = leuzeLaserResponse[7] & 0x20;
+       LeuzeLaserData.IO1    = leuzeLaserResponse[7] & 0x10;
+       LeuzeLaserData.adr    = leuzeLaserResponse[7] & 0x0F;
+       LeuzeLaserData.ready  = leuzeLaserResponse[8] & 0x80;
+       LeuzeLaserData.lsr    = leuzeLaserResponse[8] & 0x40;
+       LeuzeLaserData.tmp    = leuzeLaserResponse[8] & 0x20;
+       LeuzeLaserData.err    = leuzeLaserResponse[8] & 0x10;
+       LeuzeLaserData.att    = leuzeLaserResponse[8] & 0x08;
+       LeuzeLaserData.plb    = leuzeLaserResponse[8] & 0x04;
+       LeuzeLaserData.ovfl   = leuzeLaserResponse[8] & 0x02;
+       LeuzeLaserData.sign   = leuzeLaserResponse[8] & 0x01;
+       LeuzeLaserData.value  = ((leuzeLaserResponse[9]<<16) | (leuzeLaserResponse[10]<<8) | (leuzeLaserResponse[11]))*0.001;
+switch(LeuzeLaserData.messwert_kennung)
+       {
+          case 'P':
+            Position_1 = Position_0;
+            Position_0 = LeuzeLaserData;
+          break;
+
+          case 'G':
+            Geschwindigkeit_1 = Geschwindigkeit_0;
+            Geschwindigkeit_0 = LeuzeLaserData;
+          break;
+
+          default:
+
+          break;
+       }
+     //LeuzeLaserData.value=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
+     incomingSpeed=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
              Memo1->Lines->Add( incomingSpeed);
 }
 //---------------------------------------------------------------------------
