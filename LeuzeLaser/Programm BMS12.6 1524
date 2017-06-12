@@ -12,32 +12,32 @@
 #define INDEXMAX 100
 #define MAXCYCLESBEFORE 1000
 #define MAXCYCLESAFTER 10000
+char memo1Label[15];
 unsigned char abc[]="12344";
 unsigned char embeddebBoxData[2]="";
 unsigned char decide;
 float incomingSpeed=0;
 float actSpeed[100];
-int speedIndex=0;
+int structIndexbef=0;
+int structIndexaft=0;
 //STRUCTS
-#define MAXCYCLESBEFORE 1000
-#define MAXCYCLESAFTER 10000
 
 // Speed and distance before using the break
 struct speedAndDisctanceBefore{
 int speedBefore;
 int distanceBefore;	
 };
-struct speedAndDisctanceBefore incomingDateBefore[MAXCYCLESBEFORE];
+struct speedAndDisctanceBefore incomingDataBefore[MAXCYCLESBEFORE];
 
 
 //Speed and Distance after using the break
-
 struct struct speedAndDisctanceAfter{
 int speedAfter;
 int distanceAfter;	
 };
-struct speedAndDisctanceAfter incomingDateAfter[MAXCYCLESAFTER];
-//Start and stoptime
+struct speedAndDisctanceAfter incomingDataAfter[MAXCYCLESAFTER];
+
+//Starttime
 struct START_TIME{
 char startCompleteDate[50];
 long startMinute;
@@ -47,6 +47,7 @@ bool allreadyStarted;
 };
 struct START_TIME start={"abc",0,0,0,false};
 
+//Stoptime
 struct STOP_TIME{
 char stopcompleteDate[50];
 long stopMinute;
@@ -55,8 +56,8 @@ long stopMilliseconds;
 bool allreadyStopped;
 };
 struct STOP_TIME stop={"",0,0,0,false};
-//Messdaten des Leutze Lasers
-    int typx=0;
+
+//reading Leuze laser
 struct leuzeLaserStruct
 {char MesswertKennung;
   bool status;
@@ -87,13 +88,14 @@ gogo->startSecond=st.wSecond;
 gogo->startMinute=st.wMinute;
 sprintf(gogo->startCompleteDate,"%02d.%02d.%04d %02d:%02d:%02d:%04d",lt.wDay, lt.wMonth, lt.wYear, lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds);
 }
+
 //Geschwindigkeitsabfrage
 void getSpeed(){
 actSpeed[speedIndex]=incomingSpeed;
 speedIndex++;
 if(speedIndex==INDEXMAX){
 speedIndex=0;
-             }
+}
 }
 
 TForm1 *Form1;
@@ -286,13 +288,13 @@ void __fastcall TForm1::ClientSocket1Read(TObject *Sender,
 switch(LeuzeLaserData.messwert_kennung)
        {
           case 'P':
-            Position_1 = Position_0;
-            Position_0 = LeuzeLaserData;
+		  strcpy(memo1Label, "Entfernung");
+           incomingDataBefore[structIndexbef].distanceBefore=LeuzeLaserData.value;
+		   structIndexbef++
           break;
 
           case 'G':
-            Geschwindigkeit_1 = Geschwindigkeit_0;
-            Geschwindigkeit_0 = LeuzeLaserData;
+            
           break;
 
           default:
@@ -300,8 +302,13 @@ switch(LeuzeLaserData.messwert_kennung)
           break;
        }
      //LeuzeLaserData.value=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
-     incomingSpeed=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
-             Memo1->Lines->Add( incomingSpeed);
+     //incomingSpeed=(leuzeLaserResponse[9]<<16)+(leuzeLaserResponse[10]<<8)+leuzeLaserResponse[11];
+
+	 
+	 Memo1->Clear();
+	 Memo1->Lines->Add(memo1Label);
+	 Memo1->Lines->Delete(Memo1->Lines->Count);
+	 Memo1->Lines->Add(memo1Label);
 }
 //---------------------------------------------------------------------------
 
